@@ -1,4 +1,4 @@
-FROM php:7.2.0-fpm
+FROM php:7.0-fpm
 
 LABEL maintainer="Ric Harvey <ric@ngd.io>"
 
@@ -6,12 +6,12 @@ ENV php_conf /usr/local/etc/php-fpm.conf
 ENV fpm_conf /usr/local/etc/php-fpm.d/www.conf
 ENV php_vars /usr/local/etc/php/conf.d/docker-vars.ini
 
-ENV NGINX_VERSION 1.13.8-1~stretch
-ENV NJS_VERSION   1.13.8.0.1.15-1~stretch
+ENV NGINX_VERSION 1.13.8-1~jessie
+ENV NJS_VERSION   1.13.8.0.1.15-1~jessie
 
 RUN set -x \
 	&& apt-get update \
-	&& apt-get install --no-install-recommends --no-install-suggests -y gnupg1 \
+	&& apt-get install --no-install-recommends --no-install-suggests -y gnupg \
 	&& \
 	NGINX_GPGKEY=573BFD6B3D8FBC641079A6ABABF5BD827BD9BF62; \
 	found=''; \
@@ -25,7 +25,7 @@ RUN set -x \
 		apt-key adv --keyserver "$server" --keyserver-options timeout=10 --recv-keys "$NGINX_GPGKEY" && found=yes && break; \
 	done; \
 	test -z "$found" && echo >&2 "error: failed to fetch GPG key $NGINX_GPGKEY" && exit 1; \
-	apt-get remove --purge --auto-remove -y gnupg1 && rm -rf /var/lib/apt/lists/* \
+	rm -rf /var/lib/apt/lists/* \
 	&& dpkgArch="$(dpkg --print-architecture)" \
 	&& nginxPackages=" \
 		nginx=${NGINX_VERSION} \
@@ -37,13 +37,13 @@ RUN set -x \
 	&& case "$dpkgArch" in \
 		amd64|i386) \
 # arches officialy built by upstream
-			echo "deb http://nginx.org/packages/mainline/debian/ stretch nginx" >> /etc/apt/sources.list \
+			echo "deb http://nginx.org/packages/mainline/debian/ jessie nginx" >> /etc/apt/sources.list \
 			&& apt-get update \
 			;; \
 		*) \
 # we're on an architecture upstream doesn't officially build for
 # let's build binaries from the published source packages
-			echo "deb-src http://nginx.org/packages/mainline/debian/ stretch nginx" >> /etc/apt/sources.list \
+			echo "deb-src http://nginx.org/packages/mainline/debian/ jessie nginx" >> /etc/apt/sources.list \
 			\
 # new directory for storing sources and .deb files
 			&& tempDir="$(mktemp -d)" \
@@ -103,9 +103,9 @@ RUN apt-get update && \
     supervisor \
     curl \
     git \
-    python \
-    python-dev \
-    python-pip \
+#    python \
+#    python-dev \
+#    python-pip \
     libaugeas-dev \
     libcurl4-openssl-dev \
     ca-certificates \
@@ -142,10 +142,10 @@ RUN apt-get update && \
     php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" && \
     php -r "if (hash_file('SHA384', 'composer-setup.php') === '${EXPECTED_COMPOSER_SIGNATURE}') { echo 'Composer.phar Installer verified'; } else { echo 'Composer.phar Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;" && \
     php composer-setup.php --install-dir=/usr/bin --filename=composer && \
-    php -r "unlink('composer-setup.php');"  && \
-    pip install -U pip && \
-    pip install -U certbot && \
-    mkdir -p /etc/letsencrypt/webrootauth
+    php -r "unlink('composer-setup.php');"
+#    pip install -U pip && \
+#    pip install -U certbot && \
+#    mkdir -p /etc/letsencrypt/webrootauth
 #    ln -s /usr/bin/php7 /usr/bin/php
 
 ADD conf/supervisord.conf /etc/supervisord.conf
@@ -193,9 +193,10 @@ RUN echo "cgi.fix_pathinfo=0" > ${php_vars} &&\
 ADD scripts/start.sh /start.sh
 ADD scripts/pull /usr/bin/pull
 ADD scripts/push /usr/bin/push
-ADD scripts/letsencrypt-setup /usr/bin/letsencrypt-setup
-ADD scripts/letsencrypt-renew /usr/bin/letsencrypt-renew
-RUN chmod 755 /usr/bin/pull && chmod 755 /usr/bin/push && chmod 755 /usr/bin/letsencrypt-setup && chmod 755 /usr/bin/letsencrypt-renew && chmod 755 /start.sh
+#ADD scripts/letsencrypt-setup /usr/bin/letsencrypt-setup
+#ADD scripts/letsencrypt-renew /usr/bin/letsencrypt-renew
+#RUN chmod 755 /usr/bin/pull && chmod 755 /usr/bin/push && chmod 755 /usr/bin/letsencrypt-setup && chmod 755 /usr/bin/letsencrypt-renew && chmod 755 /start.sh
+RUN chmod 755 /usr/bin/pull && chmod 755 /usr/bin/push && chmod 755 /start.sh
 
 # copy in code
 ADD src/ /var/www/html/
